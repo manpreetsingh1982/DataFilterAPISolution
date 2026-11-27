@@ -1,4 +1,4 @@
-name: API CI
+name: API + UI CI/CD
 
 on:
   workflow_dispatch:
@@ -13,6 +13,10 @@ env:
   DOTNET_VERSION: "10.x"
   SOLUTION_PATH: "DataFilterAPISolution.slnx"
   API_PROJECT_PATH: "DataFilterAPI/DataFilterAPI.csproj"
+  # Blazor UI. The App Service name comes from the repository variable AZURE_UI_WEBAPP_NAME
+  # (GitHub > Settings > Secrets and variables > Actions > Variables); the UI deploy is skipped until it is set.
+  UI_PROJECT_PATH: "DataFilterUI/DataFilterUI.csproj"
+  UI_PACKAGE_PATH: "./publish-ui"
 
 jobs:
   build-and-test:
@@ -46,6 +50,15 @@ jobs:
           name: webapp
           path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
+      - name: Publish UI
+        run: dotnet publish ${{ env.UI_PROJECT_PATH }} --configuration Release --no-restore --no-build --output ${{ env.UI_PACKAGE_PATH }}
+
+      - name: Publish UI Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: uiapp
+          path: ${{ env.UI_PACKAGE_PATH }}
+
   deploy:
     name: Deploy to Azure
     runs-on: ubuntu-latest
@@ -64,3 +77,24 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+
+  deploy-ui:
+    name: Deploy UI to Azure
+    runs-on: ubuntu-latest
+    # Deploy the UI after the API, so the UI never runs against an older API
+    needs: [build-and-test, deploy]
+    if: ${{ vars.AZURE_UI_WEBAPP_NAME != '' }}
+
+    steps:
+      - name: Download UI artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: uiapp
+          path: ${{ env.UI_PACKAGE_PATH }}
+
+      - name: Deploy UI
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_UI_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_UI_PUBLISH_PROFILE }}
+          package: "${{ env.UI_PACKAGE_PATH }}"

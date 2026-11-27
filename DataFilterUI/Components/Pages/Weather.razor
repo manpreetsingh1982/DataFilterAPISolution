@@ -1,0 +1,90 @@
+﻿@page "/weather"
+@rendermode InteractiveServer
+@inject DataFilterApiClient Api
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>
+    Data from DataFilterAPI at <code>@Api.BaseAddress</code>
+    @if (version is not null)
+    {
+        <span class="text-muted"> · build <code>@ShortVersion(version.Version)</code> (@version.Environment)</span>
+    }
+</p>
+
+<button class="btn btn-primary mb-3" @onclick="LoadAsync" disabled="@loading">
+    @(loading ? "Loading..." : "Refresh")
+</button>
+
+@if (error is not null)
+{
+    <div class="alert alert-danger">
+        Could not reach the API: @error
+        <div class="small mt-1">Running locally? Start the DataFilterAPI project too (http://localhost:5286).</div>
+    </div>
+}
+else if (forecasts is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th aria-label="Temperature in Celsius">Temp. (C)</th>
+                <th aria-label="Temperature in Fahrenheit">Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private WeatherForecast[]? forecasts;
+    private ApiVersion? version;
+    private string? error;
+    private bool loading;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            forecasts = await Api.GetWeatherForecastAsync();
+            version ??= await Api.GetVersionAsync();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    // "1.0.0+e978fcb7..." -> "e978fcb"
+    private static string? ShortVersion(string? v)
+    {
+        var sha = v?.Split('+').ElementAtOrDefault(1);
+        return sha is { Length: > 7 } ? sha[..7] : v;
+    }
+}

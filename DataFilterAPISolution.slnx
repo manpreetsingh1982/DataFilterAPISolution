@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="DataFilterAPI/DataFilterAPI.csproj" />
+  <Project Path="DataFilterUI/DataFilterUI.csproj" />
 </Solution>
