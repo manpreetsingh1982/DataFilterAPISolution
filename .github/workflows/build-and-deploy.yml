@@ -5,14 +5,14 @@ on:
   push:
     branches:
       - main
+      - master
 
 env:
-  AZURE_WEBAPP_NAME: DataFilterAPI
-  AZURE_WEBAPP_PACKAGE_PATH: "./DataFilterAPI/publish"
+  AZURE_WEBAPP_NAME: DataFilterAPI # must match the App Service name in Azure exactly
+  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
   DOTNET_VERSION: "10.x"
-  SOLUTION_PATH: "DataFilterAPI.slnx"
-  API_PROJECT_PATH: "DataFilterAPI"
-  PUBLISH_DIR: "./publish"
+  SOLUTION_PATH: "DataFilterAPISolution.slnx"
+  API_PROJECT_PATH: "DataFilterAPI/DataFilterAPI.csproj"
 
 jobs:
   build-and-test:
@@ -37,7 +37,7 @@ jobs:
         run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-restore --no-build --verbosity normal
 
       - name: Publish
-        run: dotnet publish ${{ env.API_PROJECT_PATH }} --configuration Release --no-restore --no-build --property:PublishDir=${{ env.PUBLISH_DIR }}
+        run: dotnet publish ${{ env.API_PROJECT_PATH }} --configuration Release --no-restore --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       - name: Publish Artifacts
         uses: actions/upload-artifact@v4
@@ -58,7 +58,7 @@ jobs:
           path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       - name: Deploy
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
