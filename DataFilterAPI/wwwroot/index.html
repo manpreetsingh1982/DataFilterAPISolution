@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DataFilterAPI</title>
+    <style>
+        :root { color-scheme: light dark; --bg: #f7f7f8; --card: #fff; --text: #1d1d1f; --muted: #6b6b70; --accent: #2563eb; --border: #e3e3e6; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #141416; --card: #1e1e21; --text: #ececef; --muted: #9a9aa1; --accent: #60a5fa; --border: #2e2e33; } }
+        body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+        main { max-width: 760px; margin: 40px auto; padding: 0 16px; }
+        h1 { margin: 0 0 4px; font-size: 1.6rem; }
+        .muted { color: var(--muted); }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-top: 16px; }
+        .card h2 { margin: 0 0 10px; font-size: 1.05rem; }
+        a { color: var(--accent); }
+        button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; font-size: .95rem; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .95rem; }
+        th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+        code { font-family: ui-monospace, Consolas, monospace; }
+        .error { color: #dc2626; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>DataFilterAPI</h1>
+    <div class="muted">Test page served from <code>wwwroot/index.html</code></div>
+
+    <div class="card">
+        <h2>Running build</h2>
+        <div id="version" class="muted">Loading…</div>
+    </div>
+
+    <div class="card">
+        <h2>Links</h2>
+        <ul>
+            <li><a href="swagger">Swagger UI</a></li>
+            <li><a href="openapi/v1.json">OpenAPI document</a></li>
+            <li><a href="WeatherForecast">/WeatherForecast (raw JSON)</a></li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Try the API</h2>
+        <button id="load">GET /WeatherForecast</button>
+        <div id="result"></div>
+    </div>
+</main>
+
+<script>
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    fetch("version")
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(v => {
+            document.getElementById("version").innerHTML =
+                `Version <code>${esc(v.version)}</code> · environment <code>${esc(v.environment)}</code> · started <code>${esc(v.startedUtc)}</code>`;
+        })
+        .catch(e => { document.getElementById("version").innerHTML = `<span class="error">/version failed (${esc(e)})</span>`; });
+
+    document.getElementById("load").addEventListener("click", async () => {
+        const out = document.getElementById("result");
+        out.textContent = "Loading…";
+        try {
+            const r = await fetch("WeatherForecast");
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const rows = await r.json();
+            out.innerHTML = `<table><thead><tr><th>Date</th><th>°C</th><th>°F</th><th>Summary</th></tr></thead><tbody>${
+                rows.map(x => `<tr><td>${esc(x.date)}</td><td>${esc(x.temperatureC)}</td><td>${esc(x.temperatureF)}</td><td>${esc(x.summary)}</td></tr>`).join("")
+            }</tbody></table>`;
+        } catch (e) {
+            out.innerHTML = `<span class="error">${esc(e.message)}</span>`;
+        }
+    });
+</script>
+</body>
+</html>

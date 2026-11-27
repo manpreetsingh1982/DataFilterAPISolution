@@ -31,7 +31,8 @@ jobs:
         run: dotnet restore ${{ env.SOLUTION_PATH }}
 
       - name: Build
-        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+        # SourceRevisionId stamps the commit SHA into the assembly version (shown at /version)
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore -p:SourceRevisionId=${{ github.sha }}
 
       - name: Test
         run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-restore --no-build --verbosity normal

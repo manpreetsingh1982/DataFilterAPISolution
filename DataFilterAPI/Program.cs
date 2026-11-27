@@ -1,3 +1,5 @@
+using System.Reflection;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -22,8 +24,22 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 
+// Serves wwwroot/index.html at "/" (test page)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Reports which build is running; in CI the version includes the Git commit SHA
+var startedUtc = DateTime.UtcNow;
+app.MapGet("/version", () => new
+{
+    version = Assembly.GetExecutingAssembly()
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+    environment = app.Environment.EnvironmentName,
+    startedUtc
+}).ExcludeFromDescription();
 
 app.Run();
