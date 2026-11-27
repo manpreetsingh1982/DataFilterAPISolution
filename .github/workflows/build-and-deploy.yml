@@ -86,6 +86,20 @@ jobs:
     if: ${{ vars.AZURE_UI_WEBAPP_NAME != '' }}
 
     steps:
+      - name: Check UI deploy settings
+        env:
+          UI_APP: ${{ vars.AZURE_UI_WEBAPP_NAME }}
+          UI_PROFILE: ${{ secrets.AZURE_UI_PUBLISH_PROFILE }}
+        run: |
+          if [ "$UI_APP" = "$AZURE_WEBAPP_NAME" ]; then
+            echo "::error::AZURE_UI_WEBAPP_NAME is '$UI_APP', the API's App Service. Set it to the UI's App Service name, or the UI would overwrite the API."
+            exit 1
+          fi
+          if [ -z "$UI_PROFILE" ]; then
+            echo "::error::Secret AZURE_UI_PUBLISH_PROFILE is missing. Add the UI App Service's publish profile under Settings > Secrets and variables > Actions > Secrets."
+            exit 1
+          fi
+
       - name: Download UI artifact from build job
         uses: actions/download-artifact@v4
         with:
