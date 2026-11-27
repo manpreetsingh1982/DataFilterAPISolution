@@ -8,7 +8,7 @@ on:
       - master
 
 env:
-  AZURE_WEBAPP_NAME: DataFilterAPI # must match the App Service name in Azure exactly
+  AZURE_WEBAPP_NAME: myapiapp # must match msdeploySite in the publish profile exactly
   AZURE_WEBAPP_PACKAGE_PATH: "./publish"
   DOTNET_VERSION: "10.x"
   SOLUTION_PATH: "DataFilterAPISolution.slnx"
